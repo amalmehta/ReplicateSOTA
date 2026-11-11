@@ -1,0 +1,31 @@
+[project]
+name = "replicatesota"
+version = "0.1.0"
+description = "Rebuild current open-weights models from scratch, prove the rebuild matches, and explain them."
+requires-python = ">=3.11,<3.13"
+dependencies = [
+  # PyTorch stopped shipping Intel-Mac wheels after 2.2.2; everywhere else use a current release.
+  "torch==2.2.2; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+  "torch>=2.6; sys_platform != 'darwin' or platform_machine != 'x86_64'",
+  "numpy<2; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+  "numpy; sys_platform != 'darwin' or platform_machine != 'x86_64'",
+  "safetensors>=0.4",
+  "tokenizers>=0.20",
+  "huggingface_hub>=0.25",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "matplotlib>=3.8"]
+# Only for the reference job in CI (Linux): the official implementation we check against.
+reference = ["transformers==5.22.2"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["replicatesota", "replicatesota.models"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

@@ -1,0 +1,43 @@
+name: Verify against official implementation
+
+on:
+  push:
+    branches: [main]
+    paths: ["replicatesota/**", "reference/**", ".github/workflows/verify.yml", "pyproject.toml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install (CPU torch + pinned transformers)
+        run: |
+          pip install --index-url https://download.pytorch.org/whl/cpu "torch>=2.6"
+          pip install -e ".[dev,reference]"
+          pip freeze > pip-freeze.txt
+      - name: Cache Hugging Face weights
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-qwen35-0p8b-v1
+      - name: Unit tests
+        run: pytest -q tests/test_units.py
+      - name: Official vs ours, every position
+        run: python reference/make_reference.py
+      - name: Upload report and fixtures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verify
+          path: |
+            results/verify.json
+            tests/fixtures/qwen35/
+            pip-freeze.txt

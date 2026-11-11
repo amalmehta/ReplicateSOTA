@@ -1,0 +1,15 @@
+# Private planning files (kept on this Mac; see docs/INSTRUCTIONS.md)
+replicate any SOTA model.md
+CLAUDE.md
+Shortcuts.md
+.claude/
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+.pytest_cache/
+# Large files never committed
+*.safetensors
+!tests/fixtures/**/*.safetensors
+.DS_Store

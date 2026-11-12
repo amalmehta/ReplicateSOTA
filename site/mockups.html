@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Site Mockups</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:opsz,wght@6..72,400;6..72,600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#faf7f2;--card:#fffdf9;--ink:#1f1d1a;--muted:#6b665e;--line:#e7e1d6;--blue:#3d6a8e;--terra:#b5643c}
+@media (prefers-color-scheme:dark){:root{--bg:#161513;--card:#1e1c1a;--ink:#ece8e1;--muted:#a39d93;--line:#2e2b27;--blue:#7fa6c6;--terra:#d08a64}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 Inter,system-ui,sans-serif;padding:24px 16px}
+h1,h2,h3{font-family:Newsreader,Georgia,serif;font-weight:600;margin:.2em 0}
+.wrap{max-width:1100px;margin:auto}.lead{color:var(--muted);max-width:60ch}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px;margin-top:20px}
+.opt{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+.tag{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.frame{border:1px solid var(--line);border-radius:10px;padding:14px;margin:12px 0;background:var(--bg);min-height:330px;font-size:12px}
+.num{font-family:Newsreader,serif;font-size:26px;color:var(--blue)}.small{color:var(--muted);font-size:11px}
+.eq{font-family:Newsreader,serif;font-style:italic;text-align:center;font-size:15px;margin:8px 0}
+.bar{height:8px;border-radius:4px;background:var(--line);margin:3px 0}.bar i{display:block;height:100%;border-radius:4px;background:var(--blue)}
+.row{display:flex;gap:8px}.side{width:80px;border-right:1px solid var(--line);padding-right:8px}.side div{padding:3px 0;color:var(--muted)}.side .on{color:var(--blue);font-weight:600}
+.cards{display:grid;grid-template-columns:1fr 1fr;gap:6px}.c{border:1px solid var(--line);border-radius:6px;padding:6px}
+.stack{display:flex;flex-direction:column;gap:2px;width:60px}.L{height:9px;border-radius:2px;background:var(--line)}.F{background:var(--terra)}.hi{outline:2px solid var(--blue)}
+.pro{color:var(--muted);font-size:13px;margin:4px 0}
+</style></head><body><div class="wrap">
+<h1>Three directions for the explainer site</h1>
+<p class="lead">All three use your palette: warm off-white or near-black, a Newsreader serif over Inter, one muted blue, and terracotta used sparingly. They differ in how a reader moves through the page. These are sketches with placeholder numbers, not real results.</p>
+<div class="grid">
+
+<div class="opt"><div class="tag">A · Recommended</div><h2>Editorial long-read</h2>
+<div class="frame">
+ <h3 style="font-size:18px">Qwen3.5-0.8B, rebuilt from scratch</h3>
+ <div class="row" style="gap:18px;margin:6px 0"><div><div class="num">8/8</div><div class="small">prompts match</div></div><div><div class="num">2e-5</div><div class="small">largest logit gap*</div></div><div><div class="num">94%</div><div class="small">recall, GDN*</div></div></div>
+ <p>18 of its 24 layers don't use attention. They keep a small memory matrix and <b>correct</b> it each step…</p>
+ <div class="eq">S<sub>t</sub> = α<sub>t</sub> S<sub>t−1</sub> + β<sub>t</sub> k<sub>t</sub> (v<sub>t</sub> − S<sub>t−1</sub><sup>⊤</sup>k<sub>t</sub>)<sup>⊤</sup></div>
+ <div class="small">S memory · α forget gate (0–1) · β write strength (0–1) · k key · v value</div>
+ <div class="c" style="margin-top:8px">▶ Try it: store 3 pairs, then read one back (interactive)</div>
+ <div class="small" style="margin-top:6px">* placeholder</div>
+</div>
+<p class="pro">One column that reads top to bottom and leads with the result. Each equation sits on its own line with its symbols defined beneath. Small demos are inline. It's the simplest to build and the easiest to read on a phone.</p></div>
+
+<div class="opt"><div class="tag">B</div><h2>Lab notebook</h2>
+<div class="frame"><div class="row"><div class="side"><div class="on">Overview</div><div>Architecture</div><div>DeltaNet</div><div>Verification</div><div>Experiment</div><div>Reproduce</div></div>
+ <div style="flex:1"><h3 style="font-size:16px">Verification</h3>
+ <div class="cards"><div class="c">english<br><b style="color:var(--blue)">PASS</b> 1e-5</div><div class="c">code<br><b style="color:var(--blue)">PASS</b> 2e-5</div><div class="c">long_4k<br><b style="color:var(--blue)">PASS</b> 3e-5</div><div class="c">emoji<br><b style="color:var(--blue)">PASS</b> 1e-5</div></div>
+ <div class="small" style="margin-top:8px">Per-layer gap</div><div class="bar"><i style="width:20%"></i></div><div class="bar"><i style="width:35%"></i></div><div class="bar"><i style="width:28%"></i></div></div></div></div>
+<p class="pro">A sidebar of sections, with dense result cards and the per-layer detail visible. It suits an expert reader who wants to jump around. It's weaker as a learning path, and the sidebar folds away on a phone.</p></div>
+
+<div class="opt"><div class="tag">C</div><h2>Scroll story</h2>
+<div class="frame"><div class="row" style="gap:14px"><div class="stack">
+ <div class="L"></div><div class="L"></div><div class="L"></div><div class="L F"></div><div class="L hi"></div><div class="L"></div><div class="L"></div><div class="L F"></div><div class="L"></div><div class="L"></div><div class="L"></div><div class="L F"></div><div class="L"></div><div class="L"></div><div class="L"></div><div class="L F"></div><div class="L"></div><div class="L"></div><div class="L"></div><div class="L F"></div><div class="L"></div><div class="L"></div><div class="L"></div><div class="L F"></div></div>
+ <div><h3 style="font-size:16px">Layer 5 · Gated DeltaNet</h3><p>As you scroll, the 24-layer stack on the left stays put and highlights the layer being explained. Terracotta marks the 6 full-attention layers.</p><div class="eq">o<sub>t</sub> = S<sub>t</sub><sup>⊤</sup> q<sub>t</sub></div></div></div></div>
+<p class="pro">The most memorable of the three, because the architecture stays visible the whole time. It's the hardest to keep smooth and accessible, and needs about twice the build time.</p></div>
+</div></div></body></html>

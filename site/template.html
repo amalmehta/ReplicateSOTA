@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Qwen3.5 Rebuilt</title>
+<meta name="description" content="Qwen3.5-0.8B rebuilt from scratch in PyTorch, checked against the official model at every position, with an experiment on its Gated DeltaNet layers.">
+<link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1odI+WdtXRGWt2kTvGFasHpSy3SV" crossorigin="anonymous">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+<style>
+:root{--bg:#faf7f2;--card:#fffdf9;--ink:#1f1d1a;--muted:#6b665e;--line:#e7e1d6;--blue:#3d6a8e;--blue-soft:#e3ecf3;--terra:#b5643c;--terra-soft:#f5e6dc;--ok:#3d6a8e}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#161513;--card:#1e1c1a;--ink:#ece8e1;--muted:#a39d93;--line:#2e2b27;--blue:#7fa6c6;--blue-soft:#22303b;--terra:#d08a64;--terra-soft:#3a2a21}}
+:root[data-theme="dark"]{--bg:#161513;--card:#1e1c1a;--ink:#ece8e1;--muted:#a39d93;--line:#2e2b27;--blue:#7fa6c6;--blue-soft:#22303b;--terra:#d08a64;--terra-soft:#3a2a21}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.65 Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+main{max-width:720px;margin:0 auto;padding:48px 16px 96px}
+h1,h2,h3{font-family:Newsreader,Georgia,serif;font-weight:600;line-height:1.2;letter-spacing:-.01em}
+h1{font-size:clamp(32px,6vw,46px);margin:.2em 0 .3em}
+h2{font-size:28px;margin:2.4em 0 .4em}
+h3{font-size:20px;margin:1.6em 0 .3em}
+p{margin:.7em 0}
+a{color:var(--blue)}
+.kicker{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.lede{font-size:19px;color:var(--muted)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:28px 0}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.stat .n{font-family:Newsreader,serif;font-size:30px;color:var(--blue);line-height:1.1}
+.stat .l{font-size:13px;color:var(--muted)}
+.pending .n{color:var(--muted)}
+.eq{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:18px 0;overflow-x:auto}
+.eq .katex-display{margin:.3em 0}
+.eq dl{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;font-size:14px;margin:8px 0 0;color:var(--muted)}
+.eq dt{color:var(--ink)}
+.eq .plain{font-size:15px;margin:10px 0 0}
+.note{border-left:3px solid var(--terra);padding:2px 0 2px 14px;color:var(--muted);font-size:15px}
+.principle{background:var(--blue-soft);border-radius:12px;padding:14px 16px;font-size:15px}
+.stack{display:grid;grid-template-columns:repeat(24,1fr);gap:3px;margin:16px 0 6px}
+.stack div{height:44px;border-radius:4px;background:var(--blue-soft);transition:transform .18s ease}
+.stack div.full{background:var(--terra)}
+.stack div:hover{transform:translateY(-3px)}
+.legend{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:6px}
+.demo{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:20px 0}
+.demo label{font-size:14px;color:var(--muted);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.demo input[type=range]{flex:1;min-width:140px;accent-color:var(--blue)}
+.bars{display:grid;grid-template-columns:110px 1fr 56px;gap:6px 10px;align-items:center;font-size:14px;margin-top:12px}
+.track{height:12px;background:var(--line);border-radius:6px;overflow:hidden}
+.fill{height:100%;border-radius:6px;transition:width .2s ease}
+table{width:100%;border-collapse:collapse;font-size:14px;margin:12px 0}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line)}
+th{font-weight:500;color:var(--muted)}
+td.num{font-variant-numeric:tabular-nums}
+.pass{color:var(--blue);font-weight:600}.fail{color:var(--terra);font-weight:600}
+details{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 16px;margin:14px 0}
+summary{cursor:pointer;font-weight:500}
+figure{margin:18px 0}figure img{width:100%;height:auto}
+figcaption{font-size:13px;color:var(--muted)}
+code{font-size:.88em;background:var(--card);border:1px solid var(--line);border-radius:5px;padding:1px 5px}
+pre{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;overflow-x:auto;font-size:13px}
+footer{margin-top:64px;font-size:13px;color:var(--muted)}
+.tablewrap{overflow-x:auto}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<main>
+<div class="kicker">Replicate SOTA · model 1</div>
+<h1>Qwen3.5, rebuilt from scratch</h1>
+<p class="lede">Qwen3.5-0.8B, released in February 2026, uses ordinary attention in only 6 of its 24 layers. The other 18 keep a small memory that they <em>correct</em> rather than add to. This page rebuilds the whole model in plain PyTorch, checks it against the official one at every position, and tests whether that correcting memory really recalls better.</p>
+
+<div class="stats" id="stats"></div>
+
+<h2>The shape of the model</h2>
+<p>Each of the 24 blocks does two things: it mixes information across tokens, then it transforms each token on its own (a small MLP). The interesting part is the mixing. Three blocks in every four use <b>Gated DeltaNet</b>, a linear-attention layer with a fixed-size memory. Every fourth block uses ordinary <b>softmax attention</b>, which can look back at any earlier token exactly.</p>
+<div class="stack" id="stack" aria-label="24 layers: 18 Gated DeltaNet, 6 full attention"></div>
+<div class="legend"><span><i style="background:var(--blue-soft)"></i>Gated DeltaNet (18)</span><span><i style="background:var(--terra)"></i>Full attention (6)</span></div>
+<p>Why mix the two? Attention's memory (the <em>KV cache</em>, the stored keys and values of every past token) grows with every token. DeltaNet's memory stays the same size however long the text is. The table below works this out from the model's own config.</p>
+<div class="tablewrap"><table id="memtable"></table></div>
+<p class="note">Computed from <code>config.json</code> (fp32, batch 1), not measured. Real runs add activations and framework overhead.</p>
+
+<h2>Gated DeltaNet in four lines</h2>
+<p>Think of each DeltaNet head as a notebook. Each page is a <b>key</b> (what something is about), and on it is a <b>value</b> (what to remember about it). Plain linear attention writes every new note on top of the old ones, so after a while the pages smear together. The delta rule first reads what the notebook already says for this key, then writes only the <em>difference</em>. The gate lets old ink fade, so stale notes stop getting in the way.</p>
+
+<div class="eq">
+$$\alpha_t = \exp\!\big(-e^{A}\,\operatorname{softplus}(a_t + b)\big),\qquad \beta_t = \sigma(\tilde b_t)$$
+<dl><dt>\(\alpha_t\)</dt><dd>forget gate, between 0 and 1 (1 = keep everything)</dd><dt>\(\beta_t\)</dt><dd>write strength, between 0 and 1</dd><dt>\(a_t, \tilde b_t\)</dt><dd>one number per head, computed from the current token</dd><dt>\(A, b\)</dt><dd>learned per-head constants</dd><dt>\(\sigma\)</dt><dd>the sigmoid function</dd></dl>
+<p class="plain">Step 1. The token decides how much to forget and how hard to write.</p>
+</div>
+
+<div class="eq">
+$$\hat v_t = (\alpha_t S_{t-1})^{\top} k_t$$
+<dl><dt>\(S_{t-1}\)</dt><dd>the memory, a \(128 \times 128\) matrix per head (key size × value size)</dd><dt>\(k_t\)</dt><dd>this token's key, scaled to length 1</dd><dt>\(\hat v_t\)</dt><dd>what the faded memory currently returns for this key</dd></dl>
+<p class="plain">Step 2. Look the key up in the faded memory.</p>
+</div>
+
+<div class="eq">
+$$S_t = \alpha_t S_{t-1} + \beta_t\, k_t\,(v_t - \hat v_t)^{\top}$$
+<dl><dt>\(v_t\)</dt><dd>the value this token wants stored</dd><dt>\(v_t - \hat v_t\)</dt><dd>the error: what the memory gets wrong</dd></dl>
+<p class="plain">Step 3. Write only the correction. Plain linear attention would write all of \(v_t\) instead, with \(\alpha_t = \beta_t = 1\).</p>
+</div>
+
+<div class="eq">
+$$o_t = S_t^{\top} q_t$$
+<dl><dt>\(q_t\)</dt><dd>this token's query, scaled to length 1 and then by \(1/\sqrt{128}\)</dd><dt>\(o_t\)</dt><dd>the head's output for this token</dd></dl>
+<p class="plain">Step 4. Read the updated memory with the query.</p>
+</div>
+
+<p>Step 3 is one step of gradient descent. The memory is trained, online, to map keys to values, with \(\beta_t\) as its learning rate. That's why it can overwrite a stale entry, and why plain linear attention can only pile entries on top of each other.</p>
+
+<div class="demo" id="demo">
+<b>Try it: store pairs, then read them back</b>
+<p style="font-size:14px;color:var(--muted);margin:.3em 0 .6em">The memory here is small: 8-dimensional keys, so at most 8 keys can point in fully independent directions. Store more pairs than that and the keys must overlap. Watch how each rule copes.</p>
+<label>Pairs stored <input type="range" id="npairs" min="1" max="16" value="6"><b id="nlabel">6</b></label>
+<label>Key overlap <input type="range" id="overlap" min="0" max="90" value="30"><b id="olabel">0.30</b></label>
+<label>Times each pair is seen <input type="range" id="passes" min="1" max="8" value="1"><b id="plabel">1</b></label>
+<div class="bars" id="bars"></div>
+<p style="font-size:13px;color:var(--muted);margin-top:10px">Bars show the average recall error: the distance between the value read back and the value stored, where 0 is perfect. Both rules use \(\alpha=1\) (no forgetting); the delta rule uses \(\beta=1\). The keys are random but use a fixed seed. Things to notice: past 8 pairs, linear attention's error keeps growing while the delta rule's levels off. Raise "times seen" and the delta rule keeps improving, because each pass is another gradient step (with 6 pairs, 8 passes cut its error by more than half). Linear attention stays where it was, because seeing a pair again only adds the same note again, so the overlap between notes never gets fixed.</p>
+</div>
+
+<h2>The attention layers have a gate too</h2>
+<div class="eq">
+$$o = \operatorname{softmax}\!\Big(\tfrac{QK^{\top}}{\sqrt{256}} + M\Big)V \;\odot\; \sigma(G)$$
+<dl><dt>\(Q, K, V\)</dt><dd>queries (8 heads), keys and values (2 heads, shared by 4 query heads each), size 256</dd><dt>\(M\)</dt><dd>causal mask: \(-\infty\) above the diagonal, so no token sees the future</dd><dt>\(G\)</dt><dd>a gate projected from the same input as \(Q\)</dd><dt>\(\odot\)</dt><dd>element-wise product</dd></dl>
+<p class="plain">This is ordinary attention, then each output channel is multiplied by a learned gate between 0 and 1. That lets a head say "nothing useful here" instead of being forced to output a weighted average.</p>
+</div>
+<p>Two smaller details matter for an exact match. First, rotary position encoding (RoPE) turns only the first 64 of each head's 256 channels. Second, every RMSNorm multiplies by \(1 + w\) rather than \(w\). Get either one wrong and the outputs drift within a few layers.</p>
+
+<h2>Is the rebuild exact?</h2>
+<p>"Replicated" is defined up front as a test that can't be fudged. The official <code>transformers</code> model and ours run in fp32 on the same 8 prompts. These range from a single token to 4,534 tokens, and include code, Chinese, emoji and repeated text. At every position:</p>
+<ol><li>the largest difference in any next-token score must be ≤ 10<sup>−3</sup>;</li><li>the top predicted token must be the same;</li><li>a 32-token greedy continuation must match token for token.</li></ol>
+<div class="tablewrap"><table id="verify"></table></div>
+<details><summary>Per-layer gap (where errors would show up first)</summary><div class="tablewrap"><table id="perlayer"></table></div></details>
+<p class="note" id="verifynote"></p>
+
+<h2>Does the correcting memory recall better?</h2>
+<p>The matching test proves the maths was copied correctly. It doesn't prove the delta rule does what it promises. So we train three tiny two-layer models from scratch on <b>associative recall</b>. Each one sees key–value pairs at the start of a sequence, then the keys again later, and must output each key's value.</p>
+<p><b>Hypothesis, stated before running:</b> Gated DeltaNet beats plain linear attention at every sequence length. Softmax attention is the upper baseline.</p>
+<figure id="recallfig"></figure>
+<div class="tablewrap"><table id="recall"></table></div>
+<p class="note" id="recallnote"></p>
+<details><summary>Exact setup and how it differs from the papers</summary><div id="recallsetup"></div></details>
+
+<h2>What this does not show</h2>
+<ul>
+<li>Only the text path. The vision encoder and the extra multi-token-prediction head are not rebuilt.</li>
+<li>Matching inference doesn't show how Qwen trained the model. Data, compute and recipe are not public.</li>
+<li>The recall experiment is tiny and runs on CPU. It shows a direction, not the papers' numbers. The Gated DeltaNet paper itself tests recall on S-NIAH (a needle-in-a-haystack task), not this one.</li>
+</ul>
+
+<div class="principle"><b>The reusable idea.</b> To check that you've understood a model, rebuild it and compare against the original at every position, with a tolerance you fix before running. Then test the one claim that makes the model new with the smallest experiment that could prove it wrong.</div>
+
+<h2>Reproduce</h2>
+<pre>uv venv --python 3.12 .venv && uv pip install --python .venv/bin/python -e ".[dev]"
+.venv/bin/python -m pytest                       # rebuild vs official, every prompt
+.venv/bin/python -m experiments.recall.run       # the recall experiment
+python site/build.py                             # this page, from results/*.json</pre>
+
+<footer>Code: <a href="https://github.com/amalmehta/ReplicateSOTA">github.com/amalmehta/ReplicateSOTA</a> · Model: <a href="https://huggingface.co/Qwen/Qwen3.5-0.8B">Qwen/Qwen3.5-0.8B</a> (Apache 2.0) · Papers: <a href="https://arxiv.org/abs/2412.06464">Gated Delta Networks</a>, <a href="https://arxiv.org/abs/2406.06484">DeltaNet</a>, <a href="https://arxiv.org/abs/2312.04927">Zoology (MQAR)</a> · <span id="built"></span></footer>
+</main>
+
+<script id="data" type="application/json">/*DATA*/</script>
+<script>
+const DATA = JSON.parse(document.getElementById('data').textContent);
+const $ = id => document.getElementById(id);
+const fmt = x => x === 0 ? '0' : x.toExponential(1).replace('e', '×10^').replace(/\^([-+]?)(\d+)/, (m, s, d) => '<sup>' + (s === '-' ? '−' : '') + d + '</sup>');
+
+// --- headline numbers (only from results files; "pending" when a result does not exist yet)
+(function stats() {
+  const v = DATA.verify, r = DATA.recall, cards = [];
+  if (v) {
+    const ps = Object.values(v.prompts);
+    cards.push([`${ps.filter(p => p.pass).length}/${ps.length}`, 'prompts match the official model']);
+    cards.push([fmt(Math.max(...ps.map(p => p.max_abs_logit_diff))), 'largest score gap, any position']);
+  } else {
+    cards.push(['—', 'verification pending', true], ['—', 'largest score gap pending', true]);
+  }
+  if (r && r.summary) {
+    const n = Math.max(...Object.keys(r.summary.gated_deltanet).map(Number));
+    cards.push([`${(r.summary.gated_deltanet[n][0] * 100).toFixed(0)}%`, `Gated DeltaNet recall at length ${n}`]);
+    cards.push([`${(r.summary.linear_attention[n][0] * 100).toFixed(0)}%`, `linear attention recall at length ${n}`]);
+  } else cards.push(['—', 'recall experiment pending', true]);
+  $('stats').innerHTML = cards.map(([n, l, p]) => `<div class="stat${p ? ' pending' : ''}"><div class="n">${n}</div><div class="l">${l}</div></div>`).join('');
+})();
+
+// --- layer stack and memory table, from the model config
+(function stack() {
+  const c = DATA.config;
+  $('stack').innerHTML = c.layer_types.map((t, i) => `<div class="${t === 'full_attention' ? 'full' : ''}" title="Layer ${i + 1}: ${t === 'full_attention' ? 'full attention' : 'Gated DeltaNet'}"></div>`).join('');
+  const nAttn = c.layer_types.filter(t => t === 'full_attention').length, nLin = c.layer_types.length - nAttn;
+  const kvPerTok = 2 * c.num_key_value_heads * c.head_dim * 4;                 // bytes per token per attention layer
+  const state = c.linear_num_value_heads * c.linear_key_head_dim * c.linear_value_head_dim * 4; // bytes per DeltaNet layer
+  const mb = b => b >= 1e9 ? (b / 1e9).toFixed(1) + ' GB' : (b / 1e6).toFixed(1) + ' MB';
+  const rows = [4096, 32768, 262144].map(T => `<tr><td class="num">${T.toLocaleString()} tokens</td><td class="num">${mb(nAttn * kvPerTok * T + nLin * state)}</td><td class="num">${mb(c.layer_types.length * kvPerTok * T)}</td></tr>`);
+  $('memtable').innerHTML = `<tr><th>Context</th><th>Qwen3.5 (6 attention + 18 DeltaNet)</th><th>If all 24 were attention</th></tr>` + rows.join('');
+})();
+
+// --- interactive delta rule vs linear attention
+(function demo() {
+  const D = 8;
+  function rng(seed) { let s = seed >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296); }
+  function gauss(r) { return Math.sqrt(-2 * Math.log(r() + 1e-12)) * Math.cos(2 * Math.PI * r()); }
+  const norm = v => { const n = Math.hypot(...v); return v.map(x => x / n); };
+  function run() {
+    const n = +$('npairs').value, ov = +$('overlap').value / 100, P = +$('passes').value;
+    $('nlabel').textContent = n; $('olabel').textContent = ov.toFixed(2); $('plabel').textContent = P;
+    const r = rng(7), shared = norm(Array.from({length: D}, () => gauss(r)));
+    const keys = [], vals = [];
+    for (let i = 0; i < n; i++) {
+      const own = norm(Array.from({length: D}, () => gauss(r)));
+      keys.push(norm(own.map((x, j) => Math.sqrt(1 - ov) * x + Math.sqrt(ov) * shared[j])));
+      vals.push(Array.from({length: D}, () => gauss(r)));
+    }
+    const zero = () => Array.from({length: D}, () => new Array(D).fill(0));
+    const read = (S, k) => S[0].map((_, c) => S.reduce((a, row, i) => a + row[c] * k[i], 0));
+    const Slin = zero(), Sdel = zero();
+    for (let p = 0; p < P; p++) keys.forEach((k, t) => {
+      const v = vals[t], pred = read(Sdel, k);
+      for (let i = 0; i < D; i++) for (let j = 0; j < D; j++) { Slin[i][j] += k[i] * v[j]; Sdel[i][j] += k[i] * (v[j] - pred[j]); }
+    });
+    // linear attention re-reads its memory scaled by 1/P so repeated passes are judged fairly (same total weight per pair)
+    for (let i = 0; i < D; i++) for (let j = 0; j < D; j++) Slin[i][j] /= P;
+    const err = S => keys.reduce((a, k, t) => a + Math.hypot(...read(S, k).map((x, j) => x - vals[t][j])) / Math.hypot(...vals[t]), 0) / n;
+    const e = [['Linear attention', err(Slin), 'var(--terra)'], ['Delta rule', err(Sdel), 'var(--blue)']];
+    const max = Math.max(1, ...e.map(x => x[1]));
+    $('bars').innerHTML = e.map(([l, x, c]) => `<span>${l}</span><div class="track"><div class="fill" style="width:${Math.min(100, x / max * 100)}%;background:${c}"></div></div><span class="num">${x.toFixed(2)}</span>`).join('');
+  }
+  ['npairs', 'overlap', 'passes'].forEach(id => $(id).addEventListener('input', run));
+  run();
+})();
+
+// --- verification tables
+(function verify() {
+  const v = DATA.verify;
+  if (!v) { $('verify').innerHTML = '<tr><td>Pending: the official-model comparison has not run yet.</td></tr>'; return; }
+  $('verify').innerHTML = '<tr><th>Prompt</th><th>Tokens</th><th>Largest gap</th><th>Same top token</th><th>Greedy 32</th><th></th></tr>' +
+    Object.entries(v.prompts).map(([k, p]) => `<tr><td>${k.replace('_', ' ')}</td><td class="num">${p.n_tokens.toLocaleString()}</td><td class="num">${fmt(p.max_abs_logit_diff)}</td><td class="num">${(p.top1_agreement * 100).toFixed(2)}%</td><td>${p.greedy_equal ? 'same' : 'differs at ' + p.greedy_first_mismatch}</td><td class="${p.pass ? 'pass' : 'fail'}">${p.pass ? 'Pass' : 'Fail'}</td></tr>`).join('');
+  const ks = Object.keys(v.prompts), L = v.prompts[ks[0]].per_layer_max_abs_diff.length;
+  $('perlayer').innerHTML = '<tr><th>Layer</th><th>Type</th>' + ks.map(k => `<th>${k.replace('_', ' ')}</th>`).join('') + '</tr>' +
+    Array.from({length: L}, (_, i) => `<tr><td>${i + 1}</td><td>${DATA.config.layer_types[i] === 'full_attention' ? 'attention' : 'DeltaNet'}</td>` + ks.map(k => `<td class="num">${fmt(v.prompts[k].per_layer_max_abs_diff[i])}</td>`).join('') + '</tr>').join('');
+  $('verifynote').innerHTML = `Reference: transformers ${v.versions.transformers}, torch ${v.versions.torch} (${v.versions.machine}). Ours: the same weights, revision <code>${v.revision.slice(0, 7)}</code>.`;
+})();
+
+// --- recall experiment
+(function recall() {
+  const r = DATA.recall;
+  if (!r) { $('recall').innerHTML = '<tr><td>Pending: the experiment has not finished yet.</td></tr>'; return; }
+  $('recallfig').innerHTML = '<img src="assets/recall.svg" alt="Recall accuracy against sequence length for the three layer types"><figcaption>Mean ± standard deviation over seeds. Higher is better.</figcaption>';
+  const ns = Object.keys(r.summary.gated_deltanet).map(Number).sort((a, b) => a - b);
+  const name = {gated_deltanet: 'Gated DeltaNet', linear_attention: 'Linear attention', softmax_attention: 'Softmax attention'};
+  $('recall').innerHTML = '<tr><th>Layer</th>' + ns.map(n => `<th>N = ${n}</th>`).join('') + '</tr>' +
+    Object.keys(name).map(m => `<tr><td>${name[m]}</td>` + ns.map(n => { const [mu, sd, k] = r.summary[m][n]; return `<td class="num">${(mu * 100).toFixed(1)} ± ${(sd * 100).toFixed(1)}%</td>`; }).join('') + '</tr>').join('');
+  $('recallnote').textContent = r.verdict;
+  $('recallsetup').innerHTML = `<p>${r.setup}</p><ul>${r.deviations_from_zoology.map(d => `<li>${d}</li>`).join('')}</ul>`;
+})();
+
+$('built').textContent = 'Built ' + DATA.built;
+document.addEventListener('DOMContentLoaded', () => renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '\\(', right: '\\)', display: false}]}));
+</script>
+</body>
+</html>

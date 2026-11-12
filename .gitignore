@@ -13,3 +13,6 @@ __pycache__/
 *.safetensors
 !tests/fixtures/**/*.safetensors
 .DS_Store
+.conda-ref/
+results/logs/
+results/pilot/*.log

@@ -1,6 +1,6 @@
 # System Design
 
-**Status:** v1 in progress (2026-11-11). Model: Qwen3.5-0.8B, text path only.
+**Status:** v1 in progress (2026-11-11). Model: Qwen3.5-0.8B, text path only. The rebuild matches the official model on all 8 prompts (worst score gap 5.3×10⁻⁵). The recall experiment is running.
 
 ## What this is
 
@@ -61,7 +61,7 @@ Each piece talks to the others through files (weights, fixtures, `results/*.json
 ## Key decisions and trade-offs
 
 - **Logit match as the definition of "replicated".** It is pass/fail and hard to fake. It proves the architecture and the weight mapping are right. It does not prove understanding, which is why v1 also includes the training experiment (the user's reason: "matching = copied math").
-- **Reference computed in CI, not locally.** PyTorch publishes no wheels newer than 2.2.2 for Intel Macs (checked 2026-11-11), and current transformers needs newer. CI gives a pinned, reproducible oracle for $0. Trade-off: the repo had to go public early.
+- **Where the reference runs.** PyTorch publishes no wheels newer than 2.2.2 for Intel Macs (checked 2026-11-11), and current transformers needs newer. The plan was CI, but GitHub Actions failed to start on this account. So the reference runs in a separate conda-forge env on this Mac (`.conda-ref/`: PyTorch 2.7.1, transformers 5.22.2), which conda-forge still builds for Intel Macs. That keeps two environments: ours on 2.2.2 and the official code on 2.7.1. That's a stronger test, because the match holds across PyTorch versions. The CI workflow is kept and will run when Actions works.
 - **Compare in CI, store compact fixtures.** Full logits for a 4k prompt are ~4 GB, so we store the top-20 per position plus 3 full rows. The local test is therefore slightly weaker than the CI test, which compares everything.
 - **Tolerance 1e-3 rather than 1e-4.** Different CPUs and torch versions accumulate rounding differently over 24 layers. We report the measured gap, and if it is far below 1e-3 we tighten the threshold.
 - **Recurrent DeltaNet form first.** It is the readable definition, one token at a time. The chunked form (the fast, parallel training form) is implemented too, but only as a test that the two forms agree. That matters because the reference uses chunked for prefill.
@@ -105,4 +105,7 @@ The current layout keeps 5–10 easy: per-model files, results as JSON, and a si
 
 ## Known limits
 
-To be filled in as the build finds them.
+- Speed: about 2 tokens/s on a 2019 Intel i9. Prefill uses the chunked DeltaNet form, and decoding uses the step-by-step form.
+- Local fixtures check the top-20 scores per position plus the full row at the last position. Only `make_reference.py` compares every score at every position.
+- The recall experiment is small (0.17M-parameter models, 1,500 steps, lengths 64/128). It shows a direction, not the papers' numbers.
+- GitHub Actions does not run yet (account-side startup failure), so nothing re-checks the match automatically on push.

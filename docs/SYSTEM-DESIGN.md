@@ -1,6 +1,6 @@
 # System Design
 
-**Status:** v1 in progress (2026-11-11). Model: Qwen3.5-0.8B, text path only. The rebuild matches the official model on all 8 prompts (worst score gap 5.3×10⁻⁵). The recall experiment is running.
+**Status:** v1 in progress (2026-11-11). Model: Qwen3.5-0.8B, text path only. The rebuild matches the official model on all 8 prompts (worst score gap 5.3×10⁻⁵). Recall experiment done: a tie at length 64; length 128 is inconclusive (the softmax baseline learned it on only 1 of 3 seeds).
 
 ## What this is
 
@@ -39,7 +39,7 @@ flowchart LR
 | `replicate/generate.py` | Greedy generation with a cache: a growing key/value cache for the attention layers, and a fixed-size conv + recurrent state for the DeltaNet layers. | model |
 | `reference/make_reference.py` | Runs the **official** model on `reference/prompts.json` (CI only). Writes the fixtures and the full comparison report. | transformers (pinned) |
 | `tests/` | Logit match against the fixtures, greedy match, and unit tests (recurrent vs chunked equivalence, RoPE, norms). | pytest |
-| `experiments/recall/` | Associative-recall training on CPU: 3 layer types × 3 lengths × 3 seeds. One command regenerates the results and figure. | torch, matplotlib |
+| `experiments/recall/` | Associative-recall training on CPU: 3 layer types × 2 lengths × 3 seeds. One command regenerates the results and figure. | torch, matplotlib |
 | `site/` | Static explainer site. Its numbers are read from `results/*.json` at build time, never typed by hand. | KaTeX via CDN, a small build script |
 
 Each piece talks to the others through files (weights, fixtures, `results/*.json`) or one small function (`load_model`, `forward`, `generate`). Any one of them can be swapped without touching the rest. For example, a second model is a new `models/<name>.py` plus `reference/` prompts.

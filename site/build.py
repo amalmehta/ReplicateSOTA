@@ -31,7 +31,18 @@ def model_config() -> dict:
     return json.loads(path.read_text())
 
 
+BASELINE_OK = 0.90  # a length counts only if softmax reaches this on EVERY seed (keep in sync with figure.py)
+
+
 def recall_summary() -> dict | None:
+    """Per-length verdicts.
+
+    Rule fixed before the run: Gated DeltaNet "wins" a length only if its mean lead over linear attention is
+    larger than the two seed spreads (sample std) added together.
+    Rule added AFTER seeing the results (2026-11-11): a length is "inconclusive" if the softmax baseline,
+    which can solve the task at any length here, failed to learn it on any seed. Then the runs measure how
+    fast training takes off in 1,500 steps, not how much a memory can hold.
+    """
     path = RES / "recall.json"
     if not path.exists():
         return None
@@ -39,22 +50,38 @@ def recall_summary() -> dict | None:
     acc: dict = {}
     for r in d["runs"]:
         acc.setdefault(r["mixer"], {}).setdefault(r["seq_len"], []).append(r["accuracy"])
-    summary = {m: {n: [float(np.mean(v)), float(np.std(v)), len(v)] for n, v in by.items()} for m, by in acc.items()}
-    ns = sorted(summary["gated_deltanet"])
-    wins = [n for n in ns if summary["gated_deltanet"][n][0] > summary["linear_attention"][n][0]]
-    # "clear" = gap larger than the two seed spreads combined; otherwise we say it is within noise.
-    clear = [n for n in wins if summary["gated_deltanet"][n][0] - summary["linear_attention"][n][0]
-             > summary["gated_deltanet"][n][1] + summary["linear_attention"][n][1]]
-    if len(clear) == len(ns):
-        verdict = f"Hypothesis supported: Gated DeltaNet beats linear attention at every length, by more than the seed spread."
-    elif wins:
-        verdict = (f"Partly supported: Gated DeltaNet is ahead at N = {', '.join(map(str, wins))}"
-                   f"{'' if clear == wins else ' (within seed noise at N = ' + ', '.join(str(n) for n in wins if n not in clear) + ')'}"
-                   f", but not at every length.")
+    sd = lambda v: float(np.std(v, ddof=1)) if len(v) > 1 else 0.0
+    summary = {m: {n: [float(np.mean(v)), sd(v), len(v)] for n, v in by.items()} for m, by in acc.items()}
+    seeds = {m: {n: [float(a) for a in v] for n, v in by.items()} for m, by in acc.items()}
+    per_length = {}
+    for n in sorted(summary["gated_deltanet"]):
+        base = seeds.get("softmax_attention", {}).get(n, [])
+        if base and min(base) < BASELINE_OK:
+            per_length[n] = {"status": "inconclusive", "baseline_learned": sum(a >= BASELINE_OK for a in base),
+                             "seeds": len(base)}
+            continue
+        g, l = summary["gated_deltanet"][n], summary["linear_attention"][n]
+        gap = g[0] - l[0]
+        status = "gdn" if gap > g[1] + l[1] else "linear" if -gap > g[1] + l[1] else "tie"
+        per_length[n] = {"status": status, "gap": gap}
+    decided = {n: v for n, v in per_length.items() if v["status"] != "inconclusive"}
+    unsure = [str(n) for n, v in per_length.items() if v["status"] == "inconclusive"]
+    tail = (f" N = {', '.join(unsure)} is inconclusive: the softmax baseline did not learn the task on every seed "
+            f"within the step budget." if unsure else "")
+    if decided and all(v["status"] == "gdn" for v in decided.values()):
+        verdict = f"Supported at N = {', '.join(map(str, decided))}: Gated DeltaNet leads by more than the seed spread." + tail
+    elif decided:
+        parts = []
+        for n, v in decided.items():
+            word = {"gdn": "Gated DeltaNet leads", "linear": "linear attention leads", "tie": "a tie"}[v["status"]]
+            parts.append(f"at N = {n}, {word} ({v['gap'] * 100:+.1f} points)")
+        verdict = "Not supported: " + "; ".join(parts) + ", within seed noise." * all(
+            v["status"] == "tie" for v in decided.values()) + tail
     else:
-        verdict = "Not supported: Gated DeltaNet does not beat linear attention at any length tested."
+        verdict = "Inconclusive at every length tested." + tail
     return {
-        "summary": summary, "verdict": verdict,
+        "summary": summary, "seeds": seeds, "per_length": per_length, "verdict": verdict,
+        "baseline_ok": BASELINE_OK,
         "setup": (f"Two-layer models, width {d['dim']}, vocabulary {d['vocab']}, batch {d['batch']}, "
                   f"learning rate {d['lr']}, {d['runs'][0]['steps']} training steps, key–value pairs = length/8, "
                   f"accuracy on 1,000 held-out sequences, torch {d['torch']}. Task format from Zoology (Arora et al. 2023)."),

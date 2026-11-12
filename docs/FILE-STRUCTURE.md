@@ -14,7 +14,7 @@ tests/
   fixtures/qwen35/      compact reference outputs (top-20 per position, last row, greedy tokens)
 experiments/recall/
   run.py                MQAR associative-recall experiment (Gated DeltaNet vs linear vs softmax)
-  figure.py             results/recall.json → site/assets/recall.svg
+  figure.py             results/recall.json → site/assets/recall.svg (one dot per seed; inconclusive lengths shaded)
 results/                every number the README and site show, as JSON
 site/                   static explainer site (GitHub Pages)
 docs/                   instructions, system design, this file, prompt log

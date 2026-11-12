@@ -16,3 +16,6 @@ __pycache__/
 .conda-ref/
 results/logs/
 results/pilot/*.log
+
+# per-mixer partial files, merged into results/recall.json
+results/recall_part_*.json

@@ -58,7 +58,7 @@ td.num{font-variant-numeric:tabular-nums}
 .pass{color:var(--blue);font-weight:600}.fail{color:var(--terra);font-weight:600}
 details{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 16px;margin:14px 0}
 summary{cursor:pointer;font-weight:500}
-figure{margin:18px 0}figure img{width:100%;height:auto}
+figure{margin:18px 0}figure img{width:100%;height:auto;background:#fffdf9;border:1px solid var(--line);border-radius:12px;padding:8px;box-sizing:border-box}
 figcaption{font-size:13px;color:var(--muted)}
 code{font-size:.88em;background:var(--card);border:1px solid var(--line);border-radius:5px;padding:1px 5px}
 pre{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;overflow-x:auto;font-size:13px}
@@ -143,6 +143,7 @@ $$o = \operatorname{softmax}\!\Big(\tfrac{QK^{\top}}{\sqrt{256}} + M\Big)V \;\od
 <figure id="recallfig"></figure>
 <div class="tablewrap"><table id="recall"></table></div>
 <p class="note" id="recallnote"></p>
+<p style="font-size:14px;color:var(--muted)">Why "inconclusive": softmax attention can look back at every earlier token, so it can solve this task at any length here. When it fails on some seeds, the runs are all-or-nothing: a model either "clicks" within the 1,500 steps or stays near chance. Averages over such runs measure how fast training takes off, not how much the memory holds. ± is the sample standard deviation over seeds. This rule was added <em>after</em> seeing the results. The win-by-more-than-the-spread rule was fixed before.</p>
 <details><summary>Exact setup and how it differs from the papers</summary><div id="recallsetup"></div></details>
 
 <h2>What this does not show</h2>
@@ -179,10 +180,14 @@ const fmt = x => x === 0 ? '0' : x.toExponential(1).replace('e', '×10^').replac
   } else {
     cards.push(['—', 'verification pending', true], ['—', 'largest score gap pending', true]);
   }
-  if (r && r.summary) {
-    const n = Math.max(...Object.keys(r.summary.gated_deltanet).map(Number));
-    cards.push([`${(r.summary.gated_deltanet[n][0] * 100).toFixed(0)}%`, `Gated DeltaNet recall at length ${n}`]);
-    cards.push([`${(r.summary.linear_attention[n][0] * 100).toFixed(0)}%`, `linear attention recall at length ${n}`]);
+  if (r && r.per_length) {
+    const ns = Object.keys(r.per_length).map(Number).sort((a, b) => a - b);
+    const ok = ns.filter(n => r.per_length[n].status !== 'inconclusive'), bad = ns.filter(n => r.per_length[n].status === 'inconclusive');
+    if (ok.length) {
+      const n = Math.max(...ok), pct = m => (r.summary[m][n][0] * 100).toFixed(1);
+      cards.push([`${pct("gated_deltanet")} / ${pct("linear_attention")}%`, `Gated DeltaNet / linear attention recall at length ${n}`]);
+    }
+    for (const n of bad) cards.push([`${r.per_length[n].baseline_learned} of ${r.per_length[n].seeds}`, `softmax runs that learned length ${n}, so it is inconclusive`]);
   } else cards.push(['—', 'recall experiment pending', true]);
   $('stats').innerHTML = cards.map(([n, l, p]) => `<div class="stat${p ? ' pending' : ''}"><div class="n">${n}</div><div class="l">${l}</div></div>`).join('');
 })();
@@ -249,11 +254,16 @@ const fmt = x => x === 0 ? '0' : x.toExponential(1).replace('e', '×10^').replac
 (function recall() {
   const r = DATA.recall;
   if (!r) { $('recall').innerHTML = '<tr><td>Pending: the experiment has not finished yet.</td></tr>'; return; }
-  $('recallfig').innerHTML = '<img src="assets/recall.svg" alt="Recall accuracy against sequence length for the three layer types"><figcaption>Mean ± standard deviation over seeds. Higher is better.</figcaption>';
+  $('recallfig').innerHTML = '<img src="assets/recall.svg" alt="Recall accuracy against sequence length for the three layer types"><figcaption>Each dot is one training seed; the short bar is the mean. Higher is better. Shaded lengths are inconclusive.</figcaption>';
   const ns = Object.keys(r.summary.gated_deltanet).map(Number).sort((a, b) => a - b);
   const name = {gated_deltanet: 'Gated DeltaNet', linear_attention: 'Linear attention', softmax_attention: 'Softmax attention'};
-  $('recall').innerHTML = '<tr><th>Layer</th>' + ns.map(n => `<th>N = ${n}</th>`).join('') + '</tr>' +
-    Object.keys(name).map(m => `<tr><td>${name[m]}</td>` + ns.map(n => { const [mu, sd, k] = r.summary[m][n]; return `<td class="num">${(mu * 100).toFixed(1)} ± ${(sd * 100).toFixed(1)}%</td>`; }).join('') + '</tr>').join('');
+  const cell = (m, n) => {
+    const v = r.seeds[m][n].map(a => (a * 100).toFixed(1)).join(', ');
+    const [mu, sd] = r.summary[m][n];
+    return `<td class="num"><b>${(mu * 100).toFixed(1)}%</b> <span style="color:var(--muted)">± ${(sd * 100).toFixed(1)}</span><br><span style="font-size:12px;color:var(--muted)">seeds: ${v}</span></td>`;
+  };
+  $('recall').innerHTML = '<tr><th>Layer</th>' + ns.map(n => `<th>N = ${n}${r.per_length[n].status === 'inconclusive' ? ' <span style="color:var(--terra)">(inconclusive)</span>' : ''}</th>`).join('') + '</tr>' +
+    Object.keys(name).map(m => `<tr><td>${name[m]}</td>` + ns.map(n => cell(m, n)).join('') + '</tr>').join('');
   $('recallnote').textContent = r.verdict;
   $('recallsetup').innerHTML = `<p>${r.setup}</p><ul>${r.deviations_from_zoology.map(d => `<li>${d}</li>`).join('')}</ul>`;
 })();

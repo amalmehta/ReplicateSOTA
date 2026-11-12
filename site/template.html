@@ -132,7 +132,7 @@ $$o = \operatorname{softmax}\!\Big(\tfrac{QK^{\top}}{\sqrt{256}} + M\Big)V \;\od
 
 <h2>Is the rebuild exact?</h2>
 <p>"Replicated" is defined up front as a test that can't be fudged. The official <code>transformers</code> model and ours run in fp32 on the same 8 prompts. These range from a single token to 4,534 tokens, and include code, Chinese, emoji and repeated text. At every position:</p>
-<ol><li>the largest difference in any next-token score must be ≤ 10<sup>−3</sup>;</li><li>the top predicted token must be the same;</li><li>a 32-token greedy continuation must match token for token.</li></ol>
+<ol><li>the largest difference in any next-token score must be ≤ 10<sup>−4</sup> (first set at 10<sup>−3</sup>, then tightened once the first run measured 5.3×10<sup>−5</sup>);</li><li>the top predicted token must be the same;</li><li>a 32-token greedy continuation must match token for token.</li></ol>
 <div class="tablewrap"><table id="verify"></table></div>
 <details><summary>Per-layer gap (where errors would show up first)</summary><div class="tablewrap"><table id="perlayer"></table></div></details>
 <p class="note" id="verifynote"></p>

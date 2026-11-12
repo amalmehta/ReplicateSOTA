@@ -13,7 +13,7 @@ from safetensors.torch import load_file
 from reference.prompts import N_GREEDY, PROMPTS
 
 FX = Path(__file__).parent / "fixtures" / "qwen35"
-MAX_ABS = 1e-3
+MAX_ABS = 1e-4  # tightened from 1e-3 after the first run measured a worst gap of 5.3e-5
 
 pytestmark = pytest.mark.skipif(not (FX / "meta.json").exists(), reason="fixtures not generated yet (run CI)")
 

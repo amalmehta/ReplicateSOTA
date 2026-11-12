@@ -8,7 +8,7 @@ Rebuild a current open-weights model from scratch, prove the rebuild matches the
 
 ## Result so far
 
-**The from-scratch rebuild matches the official model on all 8 test prompts.** The largest difference in any next-token score, at any position, is **5.3×10⁻⁵**, against a threshold of 10⁻³ fixed before running. The top token agrees at 100% of positions, and every 32-token greedy continuation is identical.
+**The from-scratch rebuild matches the official model on all 8 test prompts.** The largest difference in any next-token score, at any position, is **5.3×10⁻⁵**, against a threshold of 10⁻⁴. That threshold was first fixed at 10⁻³ before running, then tightened once the measured gap proved far smaller. The top token agrees at 100% of positions, and every 32-token greedy continuation is identical.
 
 | Prompt | Tokens | Largest score gap | Same top token | Greedy 32 |
 |---|---:|---:|---:|---|

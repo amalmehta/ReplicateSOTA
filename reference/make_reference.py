@@ -30,7 +30,7 @@ from reference.prompts import N_GREEDY, PROMPTS  # noqa: E402
 from replicatesota.generate import greedy  # noqa: E402
 from replicatesota.load import REPO_ID, REVISION, load_model, load_tokenizer  # noqa: E402
 
-MAX_ABS = 1e-3      # largest allowed |our logit - reference logit|
+MAX_ABS = 1e-4      # largest allowed |our logit - reference logit| (tightened from 1e-3 on 2026-11-11 after measuring 5.3e-5)
 TOPK = 20
 POS_CHUNK = 256     # compare logits this many positions at a time (a 4k x 248k matrix is ~4 GB)
 

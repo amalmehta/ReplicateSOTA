@@ -12,9 +12,9 @@ v1 covers one model. The goal that wins any conflict is the builder understandin
 
 ```mermaid
 flowchart LR
-  HF[(Hugging Face<br/>Qwen/Qwen3.5-0.8B<br/>weights + tokenizer)] --> L[replicate/load.py<br/>safetensors → our modules]
-  L --> M[replicate/models/qwen35.py<br/>from-scratch PyTorch]
-  M --> G[replicate/generate.py<br/>greedy decode + cache]
+  HF[(Hugging Face<br/>Qwen/Qwen3.5-0.8B<br/>weights + tokenizer)] --> L[replicatesota/load.py<br/>safetensors → our modules]
+  L --> M[replicatesota/models/qwen35.py<br/>from-scratch PyTorch]
+  M --> G[replicatesota/generate.py<br/>greedy decode + cache]
 
   subgraph CI [GitHub Actions · ubuntu · latest torch]
     R[reference/make_reference.py<br/>official transformers] --> C{compare every position<br/>max abs diff, top-1, greedy}
@@ -34,9 +34,9 @@ flowchart LR
 
 | Piece | Job | Depends on |
 |---|---|---|
-| `replicate/models/qwen35.py` | The model: RMSNorm (zero-centred), partial RoPE, gated attention (GQA), Gated DeltaNet, SwiGLU MLP, hybrid 3:1 stack. Plain torch only, and nothing in it imports `transformers`. | torch ≥ 2.2 |
-| `replicate/load.py` | Maps checkpoint names (`model.language_model.*`) onto our modules and upcasts the bf16 weights to fp32. | safetensors, huggingface_hub |
-| `replicate/generate.py` | Greedy generation with a cache: a growing key/value cache for the attention layers, and a fixed-size conv + recurrent state for the DeltaNet layers. | model |
+| `replicatesota/models/qwen35.py` | The model: RMSNorm (zero-centred), partial RoPE, gated attention (GQA), Gated DeltaNet, SwiGLU MLP, hybrid 3:1 stack. Plain torch only, and nothing in it imports `transformers`. | torch ≥ 2.2 |
+| `replicatesota/load.py` | Maps checkpoint names (`model.language_model.*`) onto our modules and upcasts the bf16 weights to fp32. | safetensors, huggingface_hub |
+| `replicatesota/generate.py` | Greedy generation with a cache: a growing key/value cache for the attention layers, and a fixed-size conv + recurrent state for the DeltaNet layers. | model |
 | `reference/make_reference.py` | Runs the **official** model on `reference/prompts.json` (CI only). Writes the fixtures and the full comparison report. | transformers (pinned) |
 | `tests/` | Logit match against the fixtures, greedy match, and unit tests (recurrent vs chunked equivalence, RoPE, norms). | pytest |
 | `experiments/recall/` | Associative-recall training on CPU: 3 layer types × 2 lengths × 3 seeds. One command regenerates the results and figure. | torch, matplotlib |

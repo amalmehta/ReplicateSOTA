@@ -8,20 +8,20 @@ Rebuild a current open-weights model from scratch, prove the rebuild matches the
 
 ## Result so far
 
-**The from-scratch rebuild matches the official model on all 8 test prompts.** The largest difference in any next-token score, at any position, is **5.3×10⁻⁵**, against a threshold of 10⁻⁴. That threshold was first fixed at 10⁻³ before running, then tightened once the measured gap proved far smaller. The top token agrees at 100% of positions, and every 32-token greedy continuation is identical.
+**The from-scratch rebuild matches the official model on all 8 test prompts.** The largest difference in any next-token score, at any position, is **3.8×10⁻⁵**, against a threshold of 10⁻⁴. That threshold was first fixed at 10⁻³ before running, then tightened once the measured gap proved far smaller (5.3×10⁻⁵ on the first, local run). The top token agrees at 100% of positions, and every 32-token greedy continuation is identical.
 
 | Prompt | Tokens | Largest score gap | Same top token | Greedy 32 |
 |---|---:|---:|---:|---|
-| one token | 1 | 1.5×10⁻⁵ | 100% | same |
-| english | 18 | 1.7×10⁻⁵ | 100% | same |
-| code | 27 | 1.8×10⁻⁵ | 100% | same |
-| chinese | 14 | 2.1×10⁻⁵ | 100% | same |
-| emoji | 32 | 1.6×10⁻⁵ | 100% | same |
-| repeated | 121 | 2.1×10⁻⁵ | 100% | same |
-| long 1k | 1,042 | 3.8×10⁻⁵ | 100% | same |
-| long 4k | 4,534 | 5.3×10⁻⁵ | 100% | same |
+| one token | 1 | 2.1×10⁻⁵ | 100% | same |
+| english | 18 | 1.4×10⁻⁵ | 100% | same |
+| code | 27 | 1.6×10⁻⁵ | 100% | same |
+| chinese | 14 | 1.3×10⁻⁵ | 100% | same |
+| emoji | 32 | 1.8×10⁻⁵ | 100% | same |
+| repeated | 121 | 1.6×10⁻⁵ | 100% | same |
+| long 1k | 1,042 | 2.9×10⁻⁵ | 100% | same |
+| long 4k | 4,534 | 3.8×10⁻⁵ | 100% | same |
 
-The reference is official `transformers` 5.22.2 on PyTorch 2.7.1. Ours runs on PyTorch 2.2.2, so the match holds across versions. Source: [`results/verify.json`](results/verify.json).
+The reference is official `transformers` 5.22.2 on PyTorch 2.15 (CPU, run in GitHub Actions). Ours runs on PyTorch 2.2.2, so the match holds across versions. Source: [`results/verify.json`](results/verify.json).
 
 ## Recall experiment
 
